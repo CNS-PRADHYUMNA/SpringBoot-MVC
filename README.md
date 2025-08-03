@@ -123,25 +123,4 @@ By default, the backend will run on: `http://localhost:8080/api`
 
 ---
 
-## 📸 Screenshots
 
-> _(Include a few screenshots of the UI if you'd like)_
-
----
-
-## 💡 Future Improvements
-
-- Add category filters
-- Search and pagination
-- Backend authentication
-- Deployment to cloud (e.g. Vercel + Render)
-
----
-
-## 📄 License
-
-This project is open-source and available under the [MIT License](LICENSE).
-
----
-
-**Built with ❤️ by [YourName]**
