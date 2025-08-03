@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>E-Commerce Product Manager</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(to right, #ece9e6, #ffffff);
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 50px auto;
+        background: white;
+        padding: 2rem;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        border-radius: 15px;
+        animation: fadeInUp 1s ease-in-out;
+      }
+      @keyframes fadeInUp {
+        0% {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        100% {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      h1 {
+        text-align: center;
+        color: #333;
+        animation: popIn 0.8s ease-out;
+      }
+      @keyframes popIn {
+        0% {
+          transform: scale(0.9);
+          opacity: 0;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        animation: fadeIn 1s ease-in;
+      }
+      th,
+      td {
+        padding: 0.8rem;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+      }
+      tr:hover {
+        background-color: #f1f1f1;
+        transition: background-color 0.3s ease;
+      }
+      input,
+      textarea {
+        padding: 0.7rem;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 1rem;
+        width: 100%;
+      }
+      .editable {
+        background-color: #fffbe6;
+        border: 1px solid #ffd700;
+      }
+      .editing {
+        background-color: #d1f3e0 !important;
+        animation: pulseEdit 1s ease-in-out;
+      }
+      @keyframes pulseEdit {
+        0% {
+          background-color: #f1f1f1;
+        }
+        50% {
+          background-color: #d1f3e0;
+        }
+        100% {
+          background-color: #f1f1f1;
+        }
+      }
+      .action-btns button {
+        margin-right: 0.3rem;
+        padding: 0.4rem 0.7rem;
+        cursor: pointer;
+      }
+      .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #4caf50;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        animation: fadeInOut 3s ease-in-out;
+      }
+      @keyframes fadeInOut {
+        0% {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        10% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        90% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        100% {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🛍️ E-Commerce Product Manager</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Price</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="product-table-body"></tbody>
+      </table>
+      <br />
+      <input type="text" id="new-id" placeholder="ID" />
+      <input type="text" id="new-name" placeholder="Name" />
+      <input type="number" id="new-price" placeholder="Price" />
+      <input type="text" id="new-description" placeholder="Description" />
+      <input type="text" id="new-category" placeholder="Category" />
+      <button onclick="addProduct()">➕ Add Product</button>
+    </div>
+
+    <div id="toast-container"></div>
+
+    <script>
+      const apiUrl = "http://localhost:8080/api";
+
+      function showToast(message, isError = false) {
+        const toast = document.createElement("div");
+        toast.className = "toast";
+        toast.style.backgroundColor = isError ? "#e53935" : "#4caf50";
+        toast.innerText = message;
+        document.getElementById("toast-container").appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+      }
+
+      async function fetchProducts() {
+        const res = await fetch(`${apiUrl}/products`);
+        const data = await res.json();
+        const tbody = document.getElementById("product-table-body");
+        tbody.innerHTML = "";
+
+        data.forEach((product) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+          <td contenteditable class="editable" data-key="id">${product.id}</td>
+          <td contenteditable class="editable" data-key="name">${product.name}</td>
+          <td contenteditable class="editable" data-key="price">${product.price}</td>
+          <td contenteditable class="editable" data-key="description">${product.description}</td>
+          <td contenteditable class="editable" data-key="category">${product.category}</td>
+          <td class="action-btns">
+            <button onclick='startUpdate(this)'>✏️</button>
+            <button onclick='deleteProduct("${product.id}")'>🗑️</button>
+          </td>
+        `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      async function addProduct() {
+        const id = document.getElementById("new-id").value.trim();
+        const name = document.getElementById("new-name").value.trim();
+        const price = parseFloat(document.getElementById("new-price").value);
+        const description = document
+          .getElementById("new-description")
+          .value.trim();
+        const category = document.getElementById("new-category").value.trim();
+
+        if (!id || !name || !description || !category || isNaN(price)) {
+          showToast("⚠️ All fields are required and must be valid!", true);
+          return;
+        }
+
+        await fetch(`${apiUrl}/product`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, name, price, description, category }),
+        });
+
+        document.getElementById("new-id").value = "";
+        document.getElementById("new-name").value = "";
+        document.getElementById("new-price").value = "";
+        document.getElementById("new-description").value = "";
+        document.getElementById("new-category").value = "";
+
+        showToast("✅ Product added successfully");
+        fetchProducts();
+      }
+
+      function startUpdate(button) {
+        const row = button.parentElement.parentElement;
+        row.classList.add("editing");
+
+        const updateBtn = document.createElement("button");
+        updateBtn.innerText = "✅";
+        updateBtn.onclick = () => confirmUpdate(row, updateBtn);
+        button.replaceWith(updateBtn);
+      }
+
+      async function confirmUpdate(row, updateBtn) {
+        const cells = row.querySelectorAll("[data-key]");
+        const updatedProduct = {};
+
+        cells.forEach((cell) => {
+          const key = cell.getAttribute("data-key");
+          updatedProduct[key] =
+            key === "price"
+              ? parseFloat(cell.innerText)
+              : cell.innerText.trim();
+        });
+
+        if (
+          !updatedProduct.id ||
+          !updatedProduct.name ||
+          !updatedProduct.description ||
+          !updatedProduct.category ||
+          isNaN(updatedProduct.price)
+        ) {
+          showToast("⚠️ Invalid data. All fields are required.", true);
+          return;
+        }
+
+        await fetch(`${apiUrl}/product/${updatedProduct.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedProduct),
+        });
+
+        showToast("💾 Product updated");
+        row.classList.remove("editing");
+        fetchProducts();
+      }
+
+      async function deleteProduct(id) {
+        if (confirm("Are you sure you want to delete this product?")) {
+          await fetch(`${apiUrl}/product/${id}`, { method: "DELETE" });
+          showToast("🗑️ Product deleted");
+          fetchProducts();
+        }
+      }
+
+      fetchProducts();
+    </script>
+  </body>
+</html>
